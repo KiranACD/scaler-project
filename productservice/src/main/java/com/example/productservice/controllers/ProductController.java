@@ -4,12 +4,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.productservice.commons.AuthenticationCommons;
-import com.example.productservice.dtos.Role;
-import com.example.productservice.dtos.UserDTO;
 import com.example.productservice.exceptions.CategoryNotFoundException;
 import com.example.productservice.exceptions.ProductNotFoundException;
 import com.example.productservice.models.Product;
+import com.example.productservice.models.ProductDocument;
 import com.example.productservice.services.ProductService;
 
 import java.util.List;
@@ -27,8 +25,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-
 
 
 @RestController
@@ -36,12 +32,10 @@ import org.springframework.web.bind.annotation.RequestHeader;
 public class ProductController {
     
     private ProductService productService;
-    private AuthenticationCommons authenticationCommons;
 
     @Autowired
-    public ProductController(@Qualifier("selfProductService") ProductService productService, AuthenticationCommons authenticationCommons) {
+    public ProductController(@Qualifier("fakeStoreProductService") ProductService productService) {
         this.productService = productService;
-        this.authenticationCommons = authenticationCommons;
     }
 
     @GetMapping("")
@@ -50,7 +44,7 @@ public class ProductController {
                                                         @RequestParam("sortBy") String sortBy,
                                                         @RequestParam("sortOrder") String sortOrder) {
 
-        return new ResponseEntity<>(productService.getAllProducts(pageNumber, pageSize), HttpStatus.OK);
+        return new ResponseEntity<>(productService.getAllProducts(pageNumber, pageSize, sortBy, sortOrder), HttpStatus.OK);
     }
 
     // Path should be the location of the resource being requested
@@ -60,29 +54,51 @@ public class ProductController {
         return productService.getProduct(id);
     }
 
+    @GetMapping("/seed")
+    public ResponseEntity<String> seedDatabase() {
+        productService.seedRepositories();
+        return new ResponseEntity<>("done", HttpStatus.OK);
+    }
+
+    @GetMapping("/seedElasticsearch")
+    public ResponseEntity<String> seedElasticSearch() {
+        productService.seedElasticsearch();
+        return new ResponseEntity<>("done", HttpStatus.OK);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<ProductDocument>> searchProducts(@RequestParam("searchString") String searchString) {
+        List<ProductDocument> productDocuments = productService.searchProducts(searchString);
+        return new ResponseEntity<>(productDocuments, HttpStatus.OK);
+    }
+
     @GetMapping("/category/{category}")
     public Page<Product> getProductsInCategories(@PathVariable("category") String category) throws CategoryNotFoundException {
         return this.productService.getProductsInCategory(category);
     }
 
     @PostMapping()
-    public Product addProduct(@RequestBody Product product) throws CategoryNotFoundException {
-        return this.productService.addNewProduct(product);
+    public ResponseEntity<Product> addProduct(@RequestBody Product product) throws CategoryNotFoundException {
+        Product savedProduct = this.productService.addNewProduct(product);
+        return new ResponseEntity<>(savedProduct, HttpStatus.ACCEPTED);
     }
 
     @PatchMapping("/{id}")
-    public Product updateProduct(@PathVariable("id") Long id, @RequestBody Product product) throws ProductNotFoundException {
-        return productService.updateProduct(id, product);
+    public ResponseEntity<Product> updateProduct(@PathVariable("id") Long id, @RequestBody Product product) throws ProductNotFoundException {
+        Product updatedProduct = productService.updateProduct(id, product);
+        return new ResponseEntity<>(updatedProduct, HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
-    public Product replaceProduct(@PathVariable("id") Long id, @RequestBody Product product) throws CategoryNotFoundException {
-        return productService.replaceProduct(id, product);
+    public ResponseEntity<Product> replaceProduct(@PathVariable("id") Long id, @RequestBody Product product) throws CategoryNotFoundException {
+        Product replacedProduct = productService.replaceProduct(id, product);
+        return new ResponseEntity<>(replacedProduct, HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/{id}")
-    public Product deleteProduct(@PathVariable("id") Long id) throws ProductNotFoundException {
-        return productService.deleteProduct(id);
+    public ResponseEntity<Product> deleteProduct(@PathVariable("id") Long id) throws ProductNotFoundException {
+        Product deletedProduct = productService.deleteProduct(id);
+        return new ResponseEntity<>(deletedProduct, HttpStatus.OK);
     }
 
     // When exception is thrown from the controller, this class level handler will be 

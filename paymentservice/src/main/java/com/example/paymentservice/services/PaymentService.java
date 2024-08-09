@@ -2,7 +2,7 @@ package com.example.paymentservice.services;
 
 public interface PaymentService {
     
-    String createPaymentLink(String orderId);
+    String createPaymentLink(Long orderId);
 
-    String getPaymentStatus(String paymentId);
+    String getPaymentStatus(String id);
 }

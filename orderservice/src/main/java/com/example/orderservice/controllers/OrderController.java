@@ -35,6 +35,12 @@ public class OrderController {
         return new ResponseEntity<>(order, HttpStatus.CREATED);
     }
 
+    @GetMapping("/{orderId}")
+    public ResponseEntity<Order> getOrder(@PathVariable("orderId") Long orderId) {
+        Order order = orderService.getOrder(orderId);
+        return new ResponseEntity<>(order, HttpStatus.OK);
+    }
+
     @GetMapping("/history/{userId}")
     public ResponseEntity<List<Order>> getOrderHistory(@PathVariable("userId") Long userId) {
         

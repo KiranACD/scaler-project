@@ -6,10 +6,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.example.productservice.dtos.FakeStoreCategoryDto;
-import com.example.productservice.dtos.FakeStoreProductDto;
 import com.example.productservice.models.Category;
-import com.example.productservice.models.Product;
 
 @Service
 public class FakeStoreCategoryService implements CategoryService {

@@ -111,11 +111,11 @@ public class OrderService {
 
     public Order deleteOrder(Long id) {
 
-        Optional<Order> optionalOrder = orderRepository.findById(id);
+        Order order = getOrder(id);
 
-        if (optionalOrder.isPresent()) {
+        if (order != null) {
             orderRepository.deleteById(id);
-            return optionalOrder.get();
+            return order;
         }
 
         return null;
@@ -124,13 +124,23 @@ public class OrderService {
 
     public Order updateOrder(Long orderId, UpdateOrderDTO updateOrderDTO) {
 
-        Optional<Order> optionalOrder = orderRepository.findById(orderId);
+        Order order = getOrder(orderId);
 
-        if (optionalOrder.isPresent()) {
-            Order order = optionalOrder.get();
+        if (order != null) {
             order.setOrderStatus(updateOrderDTO.getOrderStatus());
             Order updatedOrder = orderRepository.save(order);
             return updatedOrder;
+        }
+
+        return null;
+    }
+
+    public Order getOrder(Long orderId) {
+        
+        Optional<Order> optionalOrder = orderRepository.findById(orderId);
+
+        if (optionalOrder.isPresent()) {
+            return optionalOrder.get();
         }
 
         return null;

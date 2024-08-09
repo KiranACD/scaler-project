@@ -2,6 +2,7 @@ package com.example.productservice.services;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -12,19 +13,34 @@ import com.example.productservice.exceptions.CategoryNotFoundException;
 import com.example.productservice.exceptions.ProductNotFoundException;
 import com.example.productservice.models.Category;
 import com.example.productservice.models.Product;
+import com.example.productservice.models.ProductDocument;
 import com.example.productservice.repositories.CategoryRepository;
 import com.example.productservice.repositories.ProductRepository;
+// import com.example.productservice.repositories.ProductSearchRepository;
 
 @Service("selfProductService")
 public class SelfProductService implements ProductService {
 
     private ProductRepository productRepository;
     private CategoryRepository categoryRepository;
+    // private ProductSearchRepository productSearchRepository;
+    // private ElasticsearchOperations elasticsearchOperations;
+    private FakeStoreProductService fakeStoreProductService;
+
+    // ProductSearchRepository productSearchRepository, 
+    // ElasticsearchOperations elasticsearchOperations,
 
     @Autowired
-    public SelfProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
+    public SelfProductService(ProductRepository productRepository, 
+                              CategoryRepository categoryRepository, 
+                              FakeStoreProductService fakeStoreProductService) {
+                                
+        
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        // this.productSearchRepository = productSearchRepository;
+        // this.elasticsearchOperations = elasticsearchOperations;
+        this.fakeStoreProductService = fakeStoreProductService;
     }
 
     @Override
@@ -42,7 +58,7 @@ public class SelfProductService implements ProductService {
     }
 
     @Override
-    public Page<Product> getAllProducts(int pageNumber, int pageSize) {
+    public Page<Product> getAllProducts(int pageNumber, int pageSize, String sortBy, String sortOrder) {
         // TODO Auto-generated method stub
         Page<Product> products = productRepository.findAll(PageRequest.of(pageNumber, pageSize));
         return products;
@@ -137,8 +153,100 @@ public class SelfProductService implements ProductService {
 
     public Product saveProduct(Product product) {
         Product savedProduct = productRepository.save(product);
+        ProductDocument productDocument = convertProductToProductDocument(savedProduct);
+        // ProductDocument productDocument = new ProductDocument();
+        // productDocument.setId(savedProduct.getId());
+        // productDocument.setTitle(savedProduct.getTitle());
+        // productDocument.setPrice(savedProduct.getPrice());
+        // productDocument.setCategory(savedProduct.getCategory().getName());
+        // productDocument.setDescription(savedProduct.getDescription());
+        // productDocument.setImageUrl(savedProduct.getImageUrl());
+        // productSearchRepository.save(productDocument);
         return savedProduct;
     }
+
+    public ProductDocument convertProductToProductDocument(Product product) {
+        ProductDocument productDocument = new ProductDocument();
+        productDocument.setId(product.getId());
+        productDocument.setTitle(product.getTitle());
+        productDocument.setPrice(product.getPrice());
+        productDocument.setCategory(product.getCategory().getName());
+        productDocument.setDescription(product.getDescription());
+        productDocument.setImageUrl(product.getImageUrl()); 
+        return productDocument;
+    }
     
+    @Override
+    public List<ProductDocument> searchProducts(String searchString) {
+        
+        // List<String> searchTerms = Arrays.asList(searchString.split(" "));
+
+        // BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+
+        // for (String term: searchTerms) {
+        //     boolQueryBuilder.should(new MatchQuery.Builder()
+        //             .field("title").query(term)
+        //             .build()._toQuery());
+        //     boolQueryBuilder.should(new MatchQuery.Builder()
+        //             .field("category").query(term)
+        //             .build()._toQuery());
+        //     boolQueryBuilder.should(new MatchQuery.Builder()
+        //             .field("description").query(term)
+        //             .build()._toQuery());
+        // }
+
+        // NativeQuery searchQuery = NativeQuery.builder()
+        //         .withQuery(boolQueryBuilder.build()._toQuery())
+        //         .build();
+
+        // SearchHits<ProductDocument> searchProductHits = elasticsearchOperations.search(searchQuery, ProductDocument.class);
+
+        // if (searchProductHits.getTotalHits() == 0) {
+        //     return Collections.emptyList();
+        // }
+
+        // List<ProductDocument> products = searchProductHits.getSearchHits().stream()
+        //                 .map(SearchHit::getContent)
+        //                 .collect(Collectors.toList());
+        
+        // return products;
+        return null;
+    }
+
+    @Override
+    public void seedRepositories() {
+        List<Product> savedProducts = seedDB();
+        seedElasticsearch();        
+        System.out.println("Database seeded with " + savedProducts.size() + " products");
+    }
+
+    public List<Product> getProductsFromFakeStore() {
+        return fakeStoreProductService.getAllProductsFromFakeStore();
+    }
+
+    
+    public List<Product> seedDB() {
+        List<Product> products = getProductsFromFakeStore();
+        List<Product> savedProducts = productRepository.saveAll(products);
+        return savedProducts;
+    }
+
+    @Override
+    public void seedElasticsearch() {
+        List<Product> savedProducts = productRepository.findAll();
+        if (savedProducts.isEmpty()) {
+            savedProducts = getProductsFromFakeStore();
+        }
+        List<ProductDocument> productDocuments = getProductDocumentsFromProducts(savedProducts);
+        // productSearchRepository.saveAll(productDocuments);
+    } 
+
+    public List<ProductDocument> getProductDocumentsFromProducts(List<Product> products) {
+        List<ProductDocument> productDocuments = products.stream()
+                                .map(this::convertProductToProductDocument)
+                                .collect(Collectors.toList());
+        return productDocuments;
+    }
+
     
 }

@@ -15,6 +15,9 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/products/seed").permitAll()
+                .requestMatchers("/products/seedElasticsearch").permitAll()
+                .requestMatchers("/products/search").permitAll()
                 .requestMatchers("/products/{id}").authenticated()
                 .requestMatchers("/products").permitAll()//hasAuthority("SCOPE_ADMIN")
                 .anyRequest().permitAll()
